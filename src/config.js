@@ -1,14 +1,17 @@
 import "phaser";
 
-
-
-const config = {
+export default {
   type: Phaser.AUTO,
   parent: "phaser-example",
   width: 800,
   height: 600,
-  scene: {
-    preload: preload,
-    create: create
+  pixelArt: true,
+  roundPixels: true,
+  physics: {
+    default: "arcade",
+    arcade: {
+      gravity: { y: 0 },
+      debug: true,
+    }
   }
-};
+}
