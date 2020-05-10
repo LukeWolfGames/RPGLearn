@@ -2,9 +2,12 @@ import "phaser";
 
 export default {
   type: Phaser.AUTO,
-  parent: "phaser-example",
-  width: 800,
-  height: 600,
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    parent: "phaser-example",
+    width: "100%",
+    height: "100%"
+  },
   pixelArt: true,
   roundPixels: true,
   physics: {
