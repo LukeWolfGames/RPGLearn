@@ -8,7 +8,7 @@ export default class Portal extends Phaser.Physics.Arcade.Sprite {
         // enable physics
         this.scene.physics.world.enable(this);
         
-        // add our player to the scene
+        // add our portal to the scene
         this.scene.add.existing(this);
     }
 }
