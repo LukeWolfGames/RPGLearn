@@ -14,5 +14,8 @@ export default class Coins extends Phaser.Physics.Arcade.StaticGroup {
     collectCoin(player, coin) {
         console.log("Collected coin!");
         this.remove(coin, true, true);
+        
+        // dispatch an event
+        this.scene.events.emit("coinCollected");
     }
 }

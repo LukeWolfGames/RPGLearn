@@ -2,6 +2,7 @@ import "phaser";
 import Player from "../sprites/player";
 import Portal from "../sprites/portal";
 import Coins from "../groups/coins";
+import Enemies from "../groups/enemies";
 
 export default class GameScene extends Phaser.Scene {
     constructor(key) {
@@ -38,6 +39,10 @@ export default class GameScene extends Phaser.Scene {
         this.coins = this.map.createFromObjects("Coins", "Coin", { key: "coin" });
         this.coinsGroup = new Coins(this.physics.world, this, this.coins);
 
+        // creating the enemies
+        this.enemies = this.map.createFromObjects("Enemies", "Enemy", {});
+        this.enemiesGroup = new Enemies(this.physics.world, this, this.enemies);
+
         // add collisions
         this.addCollisions();
 
@@ -52,6 +57,8 @@ export default class GameScene extends Phaser.Scene {
 
     addCollisions() {
         this.physics.add.collider(this.player, this.blockedLayer);
+        this.physics.add.collider(this.player, this.blockedLayer);
+        this.physics.add.overlap(this.player, this.enemiesGroup, this.player.enemyCollision.bind())
         this.physics.add.overlap(this.player, this.portal, this.loadNextLevel.bind(this));
         this.physics.add.overlap(this.player, this.coinsGroup, this.coinsGroup.collectCoin.bind(this.coinsGroup));
     }
