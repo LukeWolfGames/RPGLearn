@@ -3,7 +3,11 @@ import "phaser";
 export default class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
         super(scene, x, y, "characters", 325);
+
+        // player properties
         this.scene = scene;
+        this.health = 3;
+        this.hitDelay = false;
 
         // enable physics
         this.scene.physics.world.enable(this);
@@ -34,4 +38,28 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
+    loseHealth() {
+        this.health--;
+        this.scene.events.emit("loseHealth", this.health);
+        if(this.health === 0) {
+            this.scene.loadNextLevel(true);
+        }
+    }
+
+    enemyCollision(player, enemy) {
+        if(!this.hitDelay) {
+            this.loseHealth(); 
+            this.hitDelay = true;
+            this.tint = 0xff0000; 
+            
+            this.scene.time.addEvent({
+                delay: 1200,
+                callback: () => {
+                    this.hitDelay = false;
+                    this.tint = 0xffffff;
+                },
+                callbackScope: this,
+            });
+        }
+    } 
 }

@@ -16,6 +16,10 @@ export default class GameScene extends Phaser.Scene {
         this._NEWGAME = data.newGame;
 
         this.loadingLevel = false;
+        if(this._NEWGAME) {
+            this.events.emit("newGame");
+        } 
+
     }
 
     create() {
@@ -57,9 +61,9 @@ export default class GameScene extends Phaser.Scene {
 
     addCollisions() {
         this.physics.add.collider(this.player, this.blockedLayer);
-        this.physics.add.collider(this.player, this.blockedLayer);
-        this.physics.add.overlap(this.player, this.enemiesGroup, this.player.enemyCollision.bind())
-        this.physics.add.overlap(this.player, this.portal, this.loadNextLevel.bind(this));
+        this.physics.add.collider(this.enemiesGroup, this.blockedLayer);
+        this.physics.add.overlap(this.player, this.enemiesGroup, this.player.enemyCollision.bind(this.player));
+        this.physics.add.overlap(this.player, this.portal, this.loadNextLevel.bind(this, false));
         this.physics.add.overlap(this.player, this.coinsGroup, this.coinsGroup.collectCoin.bind(this.coinsGroup));
     }
 
@@ -112,12 +116,14 @@ export default class GameScene extends Phaser.Scene {
         this.blockedLayer.setCollisionByExclusion([-1]);
     }
 
-    loadNextLevel() {
+    loadNextLevel(endGame) {
         
         if(!this.loadingLevel) {
             this.cameras.main.fade(500, 0, 0, 0);
             this.cameras.main.on("camerafadeoutcomplete", () => {
-                if(this._LEVEL === 1) {
+                if(endGame) {
+                    this.scene.restart({ level: 1, levels: this._LEVELS, newGame: true });                    
+                } else if(this._LEVEL === 1) {
                     this.scene.restart({ level: 2, levels: this._LEVELS, newGame: false });
                 } else if(this._LEVEL === 2) {
                     this.scene.restart({ level: 1, levels: this._LEVELS, newGame: false });
