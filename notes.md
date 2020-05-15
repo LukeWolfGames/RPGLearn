@@ -1711,3 +1711,8 @@ The score will be reset to 0 and the health will be reset to 3 along with the ga
 **SUMMARY:**
 1. You can use Phaser Scene Time Events to schedule both repeatable and one time events
 2. If you setup a repeatable time event you will need to make sure you destroy it when you no longer want it to run.
+
+# 13 Shooting Enemies
+1. Use Phaser Groups to creat a pool of reusable Game Objects
+2. Listen for player input and fire a bullet
+3. Destroy enemy Game Object when its health reaches zero.
