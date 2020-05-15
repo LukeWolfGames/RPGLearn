@@ -1324,3 +1324,390 @@ Note that ${this.coinsCollected} is placed inside the backtick string so we can 
 2. Add collisions between the enemies and the Blocked layer.
 3. Use Phaser Scene Time events to move the enemies.
 
+We are going to add in logic similar to coins.
+First, in our game.js, we need to create the enemies.
+
+<script>
+
+    this.enemies = this.map.createFromObjects("Enemies", "Enemy", {});
+
+</script>
+
+this.map.createFromObjects("The name of the layer", "The name of the object", {This is an empty object method});
+This is set to an empty object because it is going to return the children for each enemy in an enemy group, because we are going to create a new class called enemies which is going to be an arcade physics group and we are going to add each member of the class to our group.
+
+<script>
+
+    this.enemiesGroup = new Enemies(this.physics.world, this, this.enemies);
+
+</script>
+
+This creates an enemy inside the group from the class enemies.
+
+Now it's time to add a new file called enemies.js inside the groups folder.
+Copy the logic from our coin's class and add it to our enemies class, 
+Instead of doing a static group, we are going to do a regular group.
+Delete the coin methods.
+Create a new method for our enemies:
+
+<script>
+
+import "phaser";
+import Enemy from "../sprites/enemy";
+
+export default class Enemies extends Phaser.Physics.Arcade.Group {
+    constructor(world, scene, children, config) {
+        super(world, scene);
+        this.spriteFrames = [0, 1, 54, 55, 108, 109, 162, 163];
+
+        // create our enemies
+        this.createEnemies(scene, children);
+    } 
+
+    createEnemies(scene, children) {
+        children.forEach(enemy => {
+            const randNumber = Math.floor(Math.random() * this.spriteFrames.length - 1);
+            enemy = new Enemy(scene, enemy.x, enemy.y, this.spriteFrames[randNumber]);
+            this.add(enemy);
+        });
+    }
+}
+
+</script>
+
+We are importing Enemy from a separate enemy file. This file is our enemy class and it will have all of the properties for our enemy character movement functions and logic, similar to our player class, but for enemies all we are doing here is creating and adding each of the enemy characters to our enemies group using the enemy class. 
+
+Also, we select between a range of sprite frames that are determined to be enemy frames inside the sprite sheet and randomly changing the appearance of each enemy upon creation. The spritFrames are defined as an array of values under our super(). This is the place where any variables we need to define will be added to our class so it's not unusual to see these defined here.
+
+When we create Enemy from our Enemy class, we first need to pass it the scene context that's it will be in, then the position of where the enemy will spawn. For our example here, it will read off the tile map data to get this information as we determined in game.js using this.map.createFromObjects expression. After that, we then select a sprite frame that goes off whatever randNumber landed on from the previous line's calculation.
+
+Now to talk about our enemy.js where we are creating each member from...
+Create enemy.js inside the sprites folder.
+Copy and paste the code from our player.js class. It will be similar.
+Delete all of the methods in the class, leaving the constructor() and super() as they are, except change the frame number in super to the word 'frame' and also add this to the constructor parametres.
+This is going to be where we can store the frame of the character becuase enemies have a range of different frames they can be.
+So effectively, it shoud look like this at the moment:
+
+<script>
+
+    import "phaser";
+
+    export default class Enemy extends Phaser.Physics.Arcade.Sprite {
+        constructor(scene, x, y, frame) {
+            super(scene, x, y, "characters", frame);
+            this.scene = scene;
+
+            // enable physics
+            this.scene.physics.world.enable(this);
+            
+            // add our enemy to the scene
+            this.scene.add.existing(this);
+
+            // scale our enemy
+            this.setScale(4);
+        }
+
+    }
+</script>
+
+As you can see not very different from player class at all, with just one thing changed.
+Of, course we need to add some differences to this because for a start enemies have their own movement logic and will be moving automatically, so we are going to have to put in a timer that will call a movement function.
+For this, we are going to use switch logic to help us do that.
+
+First, let's add a time to our main enemy properties:
+
+<script>
+
+export default class Enemy extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y, frame) {
+        super(scene, x, y, "characters", frame);
+        this.scene = scene;
+
+        // enable physics
+        this.scene.physics.world.enable(this);
+        
+        // add our enemy to the scene
+        this.scene.add.existing(this);
+
+        // scale our enemy
+        this.setScale(4);
+
+        // move our enemy
+        this.timeEvent = this.scene.time.addEvent({
+            delay: 3000,
+            callback: this.move,
+            loop: true,
+            callbackScope: this,
+        });
+    }
+
+</script>
+
+First, we are storing this entire timer in this.timeEvent if we need to refer to a property in this timer for some reason, we can do that easily.
+So every 3000 miliseconds, we will call our move() function.
+Set this to loop so it continuously keeps happening.
+For this, we pass this as our scene context for the callbackScope. This is usually how it goes in most cases, and you will not see much change here across different projects.
+
+Now for the move() function:
+
+<script>
+
+    move () {
+        const randNumber = Math.floor(Math.random() * 4 + 1);
+        switch (randNumber) {
+            case 1:
+                this.setVelocityX(100);
+                break;
+            case 2:
+                this.setVelocityX(-100);
+                break;
+            case 3:
+                this.setVelocityY(100);
+                break;
+            case 4:
+                this.setVelocityY(-100);
+                break;
+            default:
+                this.setVelocityX(100);
+                break;
+        }
+
+        // move our enemy
+        this.timeEvent = this.scene.time.addEvent({
+            delay: 500,
+            callback: () => {
+                this.setVelocity(0);
+            },
+            callbackScope: this,
+        });
+    }
+
+</script>
+
+So, for this we store a Math.floor expression that will randomly select between 1 and 4 into randNumber.
+That's what that's doing. You may have noticed that randNumber is also used when selecting a frame. This is not the same because they are in completely different scopes and are used for different things. If you wanted to call these variables different names, that would be OK to do. For this particular function, we are determining a whole number selected from a range of numbers.
+
+That random number that gets determined is going to be used in our switch.
+So switch (randNumber) and then a list of cases and a default it can refer to.
+Basically, what we are saying here is that each case number is what randNumber could be and if that's the case run the code under the case.
+In our situation, we are going to be setting the velocity of the enemy character to either go right, left, up or down.
+We need to use the break keyword to tell the computer to not continue to leave this switch and not go any further when the switch runs.
+We also have a default incase the above cases are not called, the enemy character will default to increase it's velocity by 100 on the X axis (move right), and then break out of the switch.
+
+So really, it's quite simple, select a random whole number between a range and then once the possibilities of that range are determined, create a list of conditions that will initiate an action. In this case, a random direction for the enemy to move into.
+
+**Bonus:** you can also create another switch that will trigger randomly to provide diagonal movement functions as well, but we are not doing this at the moment.
+
+After the switch, inside move(), we are going to call a timer that will be a delay in time for the enemy to stop moving. Otherwise, our enemy character will continue to move until it is told to go into a different direction and in games enemies will usually move and then stop for a time before being told to move in another direction.
+
+Now, don't forget to import enemies.js into our game.js file:
+
+<script>
+
+import "phaser";
+import Player from "../sprites/player";
+import Portal from "../sprites/portal";
+import Coins from "../groups/coins";
+import Enemies from "../groups/enemies";
+
+</script>
+
+Now that we have enemies moving around the level (feel free to test it), we are going to do collision between the player and the enemy and the surrounding consequences from that mechanic.
+
+First, let's add an overlap detection in our addCollisions() logic inside game.js.
+Make this the top of the overlap section of the method:
+
+<script>
+
+    addCollisions() {
+        // collider functions...
+        this.physics.add.overlap(this.player, this.enemiesGroup, this.player.enemyCollision.bind(this.player));
+        // other overlap functions...
+    }
+
+</script>
+
+This is similar to the other overlaps, we bind this.player with the function name so JS knows the context to call the function.
+
+For our player function, we actually want to create this function because right now it doesn't exist:
+
+inside player.js let's create it at the bottom of our class:
+
+<script>
+
+    enemyCollision(player, enemy) {
+            if(!this.hitDelay) {
+                this.loseHealth(); 
+                this.hitDelay = true;
+                this.tint = 0xff0000; 
+                
+                this.scene.time.addEvent({
+                    delay: 1200,
+                    callback: () => {
+                        this.hitDelay = false;
+                        this.tint = 0xffffff;
+                    },
+                    callbackScope: this,
+                });
+            }
+        } 
+
+</script>
+
+So with this method, we are doing a few things:
+First, we are passing the player and enemy as parametres from the overlap call.
+Then we are handling a collision delay.
+When the player collides with the enemy we are checking to see if there is no collision delay.
+The reason for this delay is important because we want to give the player some human possible reaction time for what just happened before suffering another consequence of collision with the enemy, so we need to check for this boolean to be false before proceeding.
+Then we call a loseHealth(); function, that we will add the functioinality for later.
+Then we set the hitDelay boolean to true. This will stop the player from being hit again in the same tick and only run the code (subtract health) once.
+To give a visual representation to the player to communicate the collision and the effects of this collision, we change the player's tint to red.
+
+After we do all of that we start a timer immediately for 1200 milliseconds.
+This is the delay before allowing the player to be hit again and return to normal colour.
+Again, callbackScope is always this to reference the context for this timer in JS.
+
+So this entire function is called from the overlap detection in our game.js.
+
+For the health system, we define a value called this.health = 3 in the player.js properties and create that hitDelay boolean:
+
+<script>
+
+    export default class Player extends Phaser.Physics.Arcade.Sprite {
+        constructor(scene, x, y) {
+            super(scene, x, y, "characters", 325);
+
+            // player properties
+            this.scene = scene;
+            this.health = 3;
+            this.hitDelay = false;
+
+            //... the rest of the player properties...
+        }
+
+</script>
+
+Now, we are ready to take health away!
+
+Create another method for loseHealth():
+
+<script>
+
+    loseHealth() {
+        this.health--;
+        this.scene.events.emit("loseHealth", this.health);
+        if(this.health === 0) {
+            this.scene.loadNextLevel(true);
+        }
+    }
+
+</script>
+
+The first thing we do here of course is to subtract health from the player.
+Then we are emitting "loseHealth" as a signal for our UI. This checks for a loseHealth event that will let our UI scene know that we are losing health and update the health displayed accordingly after we subtract the health.
+The last thing we check is what the health is and what should happen when it reaches 0 and that is set to restart the level.
+
+There are a couple of things we will cover here from this method, we will cover the emit that we are sending to the UI to update the health. This will be done in UI.js
+The second thing is restructuring our loadNextLevel function to consider the player dying because right now, it's just going to load the next level without considering the health mechanic.
+
+In UI.js we need to create a new text object for our health display inside the create() method:
+
+<script>
+
+    // create health text
+    this.healthText = this.add.text(12, 50, `Health: 3`, { fontSize: "32px", fill: "#fff" });
+
+</script>
+
+
+Now we need to let know our UI scene know that the player has lost health:
+
+<script>
+
+
+    this.gameScene.events.on("loseHealth", (health) => {
+        this.healthText.setText(`Health: ${health}`);
+    });
+
+</script>
+
+This listens for player.js to emit "loseHealth" and the value of that is health which is from this.health in player.js upon emitting loseHealth.
+
+then we call a function immediately on this event to update the healthText matching the value of the health variable.
+
+For the level loading issue, we need to change our loadNextLevel().
+We are currently only checking what level we are on and to move to the next or previous level.
+
+So we need to add some more conditions to this. Behold:
+
+<script>
+
+    loadNextLevel(endGame) {
+        
+        if(!this.loadingLevel) {
+            this.cameras.main.fade(500, 0, 0, 0);
+            this.cameras.main.on("camerafadeoutcomplete", () => {
+                if(endGame) {
+                    this.scene.restart({ level: 1, levels: this._LEVELS, newGame: true });                    
+                } else if(this._LEVEL === 1) {
+                    this.scene.restart({ level: 2, levels: this._LEVELS, newGame: false });
+                } else if(this._LEVEL === 2) {
+                    this.scene.restart({ level: 1, levels: this._LEVELS, newGame: false });
+                }
+            });
+        }
+        this.loadingLevel = true;
+    }
+
+</script>
+
+First, we want to pass in the endGame parameter. This is going to help us determine what we are going to do.
+Before we fix loadNextLevel, we need to update our call for loadNextLevel because we need to pass in false so that the game knows that it is not ending the game when the player goes through a portal:
+
+<script>
+
+    this.physics.add.overlap(this.player, this.portal, this.loadNextLevel.bind(this, false));
+
+</script>
+
+Now we need to make an if else if else if statement.
+If endGame is true, then restart the scene and go back to level 1 where the player started and make newGame true Otherwise the player would be moving between the two levels via the portal.
+
+We also need to update the UI accordingly on endGame from our init() function in game.js.
+During this we check to see if this._NEWGAME is called from data.newGame - the parameter we pass when restarting the scene.
+
+<script>
+
+    init(data) {
+        console.log(data);
+        this._LEVEL = data.level;
+        this._LEVELS = data.levels;
+        this._NEWGAME = data.newGame;
+
+        this.loadingLevel = false;
+        if(this._NEWGAME) {
+            this.events.emit("newGame");
+        } 
+
+    }
+
+
+</script>
+
+We emit newGame for our UI and listen for that to update the coins collected text and health in UI.js create():
+
+<script>
+        this.gameScene.events.on("newGame", () => {
+            this.coinsCollected = 0;
+            this.scoreText.setText(`Score: ${this.coinsCollected}`);
+            this.healthText.setText(`Health: 3`);
+        });
+
+</script>
+
+Similar to losing health except, we are just listening for a single emit without worrying about parametres here because we are setting defaults with this function.
+The score will be reset to 0 and the health will be reset to 3 along with the game starting all over again.
+
+**SUMMARY:**
+1. You can use Phaser Scene Time Events to schedule both repeatable and one time events
+2. If you setup a repeatable time event you will need to make sure you destroy it when you no longer want it to run.

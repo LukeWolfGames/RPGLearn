@@ -8,10 +8,10 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         // enable physics
         this.scene.physics.world.enable(this);
         
-        // add our player to the scene
+        // add our enemy to the scene
         this.scene.add.existing(this);
 
-        // scale our player
+        // scale our enemy
         this.setScale(4);
 
         // move our enemy
@@ -52,5 +52,4 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
             callbackScope: this,
         });
     }
-
 }
