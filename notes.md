@@ -1716,3 +1716,270 @@ The score will be reset to 0 and the health will be reset to 3 along with the ga
 1. Use Phaser Groups to creat a pool of reusable Game Objects
 2. Listen for player input and fire a bullet
 3. Destroy enemy Game Object when its health reaches zero.
+
+We are going to give enemies health and allow them to be destroyed when their health reaches 0.
+First, we need to give enemies a health property:
+
+<script>
+
+export default class Enemy extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y, frame) {
+        super(scene, x, y, "characters", frame);
+        this.scene = scene;
+        this.health = 3;
+        //...
+
+</script>
+
+As part of the class properties.
+
+Now, we are going to create a method for our enemy class to lose health:
+So when an ememy loses health, we need to make sure of a number of things:
+
+<script>
+
+    loseHealth() {
+        this.health--;
+        this.tint = 0xff0000;
+        if(this.health === 0) {
+            this.timeEvent.reset();
+            this.destroy();
+        } else {
+            this.scene.time.addEvent({
+                delay: 200,
+                callback: () => {
+                    this.tint = 0xffffff;
+                },
+            });
+        }
+    }
+
+</script>
+
+We first subtract health from the enemy.
+We change it's tint to red like we did with the player when they get hurt.
+We check to see if the health is 0 after that and we need to do a couple of things then:
+1. the timeEvent that governs the movement function call for the ennemy needs to stop so we do that with this.timeEvent.reset() otherwise when we destroy our enemy, it will throw an error when that timer tries to call the instance to move.
+2. Then we destroy the enemy instance.
+Otherwise, if the health is not 0 after it is subtracted, we create a timer delay for the tint to be removed.
+
+Now, we need to create our bullets group and class so we can add a pool to the game.
+A pool will allow us to use the same object over and over again without destroying and recreating which can cause performance issues in the long run because we would be reusing an object that is destroyed.
+With the pool, we would simply make the object inactive and get Phaser to go and fetch and reactivate any inactive objects that were created and dumped before.
+
+First, let's add the sprite that we want to use for our bullet via our preload() in boot.js:
+
+<script>
+
+    // load in our bullet sprite
+    this.load.image("bullet", "src/assets/ballBlack_04.png");
+
+</script>
+
+Let's call it's creation in game.js as well as some functionality for the player.
+In our create() method, add this:
+
+<script>
+    // creating the bullets
+    this.bullets = new Bullets(this.physics.world, this, []);
+
+</script>
+
+So this is very similar to how we created instances of the other classes.
+
+Next, create a bullets.js in our groups folder.
+Copy the code from our coin class into it.
+Make adjustments to the class to suit the bullet class:
+
+<script>
+
+export default class Bullets extends Phaser.Physics.Arcade.Group {
+    constructor(world, scene, children, config) {
+        super(world, scene);
+    } 
+}
+</script>
+
+To create our bullet game objects, we are going to use createMultiple().
+
+<script>
+
+export default class Bullets extends Phaser.Physics.Arcade.Group {
+    constructor(world, scene, children, config) {
+        super(world, scene);
+
+        this.createMultiple({
+            frameQuantity: 5,
+            key: "bullet",
+            active: false,
+            visible: false
+        });
+    } 
+
+</script>
+
+This method allows us to specify how many game objects are to be created and then add them to our group so we don't have to do it for each of them manually.
+This method takes an object and in that we will pass it frame quantity.
+This is the amount of game objects that are created, so we want to do 5.
+The key is the sprite we want to use and that's "bullet".
+We set them inactive and invisible by default.
+By setting the visible property to false, we are telling phaser to not render the game object sprite to our game so it will be invisible.
+Setting active to false means that we are telling Phaser that this object is no longer in use, then we can call that object from our pool that is not active.
+So we are allowing the player to have 5 active bullets in the game at any one time.
+This means that if the player rapid fires, they will need to wait until one of the bullets has gone inactive before firing again.
+
+To do this, we are going to add in another method to our bullets.js and we are going to call that fireBullet().
+
+<script>
+
+    fireBullet(x, y, direction) {
+        const bullet = this.getFirstDead(false);
+        if(bullet) {
+            bullet.enableBody(true);
+            bullet.active = true;
+            bullet.visible = true;
+            bullet.setPosition(x, y);
+            bullet.setScale(0.1);
+
+            switch(direction) {
+                case "up":
+                    bullet.setVelocityY(-300);
+                    break;
+                case "down":
+                    bullet.setVelocityY(300);
+                    break;
+                case "left":
+                    bullet.setVelocityX(-300);
+                    break;
+                case "right":
+                    bullet.setVelocityX(300);
+                    break;
+                default:
+                    bullet.setVelocityY(300);
+                
+            }
+
+            this.scene.time.addEvent({
+                delay: 1500,
+                callback: () => {
+                    bullet.disableBody();
+                    bullet.active = false;
+                    bullet.visible = false;
+                    bullet.setVelocity(0);
+                },
+            });
+        }
+    }
+
+</script>
+
+First, we pass the x and y position of the bullet into this function as well as our player direction.
+Then the getFirstDead() method is telling Phaser to find the first bullet that is not active and return that to us otherwise it will create another one.
+Then we need to set some properties:
+bullet.bullet.enableBody(true) is where we are picking the inactive bullet and renabling it's physics properties. When the bullet has hit something, it will have this property disabled otherwise it will continue to collide.
+Next, we want to make our bullet active and visible.
+Then we want to set the position of the bullet which will be the x and y co-ordinates of our player which will come through the parameters.
+Then scaling the bullet so that it is not so huge because this is a big sprite.
+Then we create a switch, similar to how enemies are created, we use a switch to consider the player's direction as a parameter before firing the bullet in that direction, and we give the bullet a speed -300 either way. We will define direction's value later.
+
+The timer class helps disable a bullet when it has gone on for too long and has not collided with anything.
+This puts the bullet back into our object pool, disabling it's speed, active and visible properties.
+
+To make any of this work we need to allow input from the player - the space bar in game.js create():
+
+<script>
+
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+</script>
+
+Then inside update() for our game.js, we need to detect for that player input.
+We also need to make sure we set this up so that the player can only fire a bullet once per press of the space bar:
+
+<script>
+
+    update() {
+        //...
+        if(Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+            this.bullets.fireBullet(this.player.x, this.player.y, this.player.direction);
+        }
+    }
+
+</script>
+
+We pass the player's x and y coordinate in the game so we can access that position before we fire the bullet in the switch.
+
+To help with this, we need to make sure we are constantly passing the direction of the player as he heads into a new direction in our player class. This part is pretty self explainatory.
+Just remember to define this.direction with the default value of "up" in the player properties of the class.
+
+<script>
+
+    update(cursors) {
+        // resetting the velocity to 0 to stop the player from moving if there is no input from the player.
+        this.setVelocity(0);
+        // check if the up or down key is pressed
+        if(cursors.up.isDown) {
+            this.direction = "up";
+            this.setVelocityY(-150);
+        } else if(cursors.down.isDown) {
+            this.setVelocityY(150);
+            this.direction = "down";
+        }
+
+        // check if the left or right key is pressed
+        if(cursors.left.isDown) {
+            this.setVelocityX(-150);
+            this.direction = "left";
+        } else if(cursors.right.isDown) {
+            this.direction = "right";
+            this.setVelocityX(150);
+        }
+    }
+
+</script>
+
+Now in our bullet's class, the direction parameter makes more sense.
+
+Now that you test the game, it will only fire in the direction the player is facing.
+
+Lastly, for these bullets to be actually useful, we will make sure that the bullets can collide with the enemy:
+
+<script>
+
+    this.physics.add.overlap(this.bullets, this.enemiesGroup, this.bullets.enemyCollision);
+
+</script>
+
+Now to create the enemy collision in our bullet.js
+
+<script>
+
+    enemyCollision(bullet, enemy) {
+        bullet.active = false;
+        bullet.visible = false;
+        bullet.disableBody();
+        enemy.loseHealth();
+    }
+
+</script>
+
+So we are passing the bullet and enemy here.
+We deactivate and make invisible the bullet and subtract health from the enemy.
+
+Enemies will now 'die' to bullets.
+
+You can also make false the debug feature in our config file to test the full game we made.
+
+**SUMMARY:**
+1. Instead of creating a new Game Object each time the player fires a bullet, you can createa a pool of objects and reuse them.
+2. To reuse Game Objects, you can use the "getFirstDead" method.
+3. This method returns the first Game Object that is not active.
+
+# 14 - Conclusion
+1. Use webpack to bundle up our js code
+2. Use that file for hosting our game.
+
+Open the terminal and run npm run build inside the project folder.
+Webpack is going to go through our config file and code and transpile it down to EES2015 javacsript files and put it all together into one file.
+Then if you go into your build folder, you will see a bundle.js file.
+That is the only file you need to host your game with a copy of your assets folder.

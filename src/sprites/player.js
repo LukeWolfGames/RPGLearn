@@ -8,6 +8,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.scene = scene;
         this.health = 3;
         this.hitDelay = false;
+        this.direction = "up";
 
         // enable physics
         this.scene.physics.world.enable(this);
@@ -17,6 +18,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         // scale our player
         this.setScale(4);
+        
+        this.scene.events.emit("playerCreat", this.health); //* to fix a bug on level 2 where the player's health is not updated. This is listened to in UI.js
     }
 
     update(cursors) {
@@ -24,16 +27,19 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.setVelocity(0);
         // check if the up or down key is pressed
         if(cursors.up.isDown) {
+            this.direction = "up";
             this.setVelocityY(-150);
         } else if(cursors.down.isDown) {
             this.setVelocityY(150);
-
+            this.direction = "down";
         }
 
         // check if the left or right key is pressed
         if(cursors.left.isDown) {
             this.setVelocityX(-150);
+            this.direction = "left";
         } else if(cursors.right.isDown) {
+            this.direction = "right";
             this.setVelocityX(150);
         }
     }

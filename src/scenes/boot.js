@@ -28,6 +28,9 @@ export default class BootScene extends Phaser.Scene {
         // load in our coin sprite
         this.load.image("coin", "src/assets/coin_01.png");
 
+        // load in our bullet sprite
+        this.load.image("bullet", "src/assets/ballBlack_04.png");
+
     }
 
     create () {

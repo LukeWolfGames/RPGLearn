@@ -3,6 +3,7 @@ import Player from "../sprites/player";
 import Portal from "../sprites/portal";
 import Coins from "../groups/coins";
 import Enemies from "../groups/enemies";
+import Bullets from "../groups/bullets";
 
 export default class GameScene extends Phaser.Scene {
     constructor(key) {
@@ -29,6 +30,7 @@ export default class GameScene extends Phaser.Scene {
 
         // listen for player input
         this.cursors = this.input.keyboard.createCursorKeys();
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // create our tilemap
         this.createMap();
@@ -47,6 +49,9 @@ export default class GameScene extends Phaser.Scene {
         this.enemies = this.map.createFromObjects("Enemies", "Enemy", {});
         this.enemiesGroup = new Enemies(this.physics.world, this, this.enemies);
 
+        // creating the bullets
+        this.bullets = new Bullets(this.physics.world, this, []);
+
         // add collisions
         this.addCollisions();
 
@@ -57,6 +62,10 @@ export default class GameScene extends Phaser.Scene {
 
     update() {
         this.player.update(this.cursors);
+
+        if(Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+            this.bullets.fireBullet(this.player.x, this.player.y, this.player.direction);
+        }
     }
 
     addCollisions() {
@@ -65,6 +74,7 @@ export default class GameScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.enemiesGroup, this.player.enemyCollision.bind(this.player));
         this.physics.add.overlap(this.player, this.portal, this.loadNextLevel.bind(this, false));
         this.physics.add.overlap(this.player, this.coinsGroup, this.coinsGroup.collectCoin.bind(this.coinsGroup));
+        this.physics.add.overlap(this.bullets, this.enemiesGroup, this.bullets.enemyCollision);
     }
 
     createPlayer() {

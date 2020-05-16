@@ -35,5 +35,10 @@ export default class UIScene extends Phaser.Scene {
             this.scoreText.setText(`Score: ${this.coinsCollected}`);
             this.healthText.setText(`Health: 3`);
         });
+
+        //* This is to resolve a bug where the player's health is not updated after going to level 2. This is listened to from player.js
+        this.gameScene.events.on("playerCreate", (health) => {
+            this.healthText.setText("Health: ${health}");
+        });
     }
 }
